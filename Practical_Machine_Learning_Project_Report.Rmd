@@ -1,29 +1,31 @@
 ---
 title: "Practical Machine Learning Course Project"
-author: "Anna Teplukhina | 27 June 2022"
+author: "Anna Teplukhina | `r Sys.Date()`"
 #date: "`r Sys.Date()`"
 output: html_document
 ---
 
-```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
-```
-
 ## Overview
 This project is dedicated to analysis
 
-## Data overview and cleaning
-There are two available data sets: training one and test one. One can load the data and check the data structure to identify important variables:
-```{r cars}
-summary(cars)
+## Pre-modelling setup and data overview 
+First one can load all libraries that will be required for the following analysis and to set a seed to ensure reproducibility:
+```{r, echo=TRUE,warning=FALSE}
+library(lattice)
+library(ggplot2)
+library(caret)
+
+set.seed(135)
 ```
 
-## Including Plots
+There are two available data sets: training one and testing one. One can load the data and check the data structure:
+```{r}
+training <- read.csv("pml-training.csv")
+testing <- read.csv("pml-testing.csv")
 
-You can also embed plots, for example:
-
-```{r pressure, echo=FALSE}
-plot(pressure)
+dim(training)
+dim(testing)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+In total, there are 160 variables and 19622/20 observations in the training/testing sets.
+
