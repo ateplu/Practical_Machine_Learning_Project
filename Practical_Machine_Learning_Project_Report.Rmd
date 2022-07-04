@@ -8,7 +8,7 @@ output: html_document
 ## Overview
 This project is dedicated to analysis
 
-## Pre-modelling setup and data overview 
+## Pre-modelling setup and data preparation 
 First one can load all libraries that will be required for the following analysis and to set a seed to ensure reproducibility:
 ```{r, echo=TRUE,warning=FALSE}
 library(lattice)
@@ -29,3 +29,17 @@ dim(testing)
 
 In total, there are 160 variables and 19622/20 observations in the training/testing sets.
 
+Before starting to develop a predictive model, it is necessary to clean the training data set and to remove unessential features, such as variables with almost zero variance and NA variables. Also, first 5 variables (```X```, ```user_name```, ```raw_timestamp_part_1```, ```raw_timestamp_part_2```, ```cvtd_timestamp```) can be excluded too since they do not contribute much to analysis.
+```{r}
+# Removing variables with almost zero variance
+tr_nzv <- nearZeroVar(training)
+training_cl <- training[,-tr_nzv]
+
+# Removing NA variables
+training_cl <- training_cl[ ,colMeans(is.na(training_cl)) < .9]
+
+# Removing first 5 variables
+training_cl <- training_cl[,-c(1:5)]
+
+dim(training_cl)
+```
