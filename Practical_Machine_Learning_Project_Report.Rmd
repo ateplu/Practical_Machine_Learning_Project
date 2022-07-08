@@ -5,19 +5,21 @@ author: "Anna Teplukhina | `r Sys.Date()`"
 output: html_document
 ---
 
-## Overview
-This project is dedicated to analysis of moving data
-There are five types ("class") of activity: standing, moving, running, lying, sleeping.
-The goal is to identify type of activity, to train multiple models and to choose one that works better than others. The chosen model will be used for predictions with the testing data set. 
+## Overview and results summary
+In this project we will be using data from accelerometers on the belt, forearm, arm, and dumbell of 6 participants to analyse the way they are performing barbell lifts. They are doing this excerise correctly and incorrectly in 5 different ways.
+
+The goal of the project is to predict the manner in which they did the exercise. This is the "classe" variable in the training set. In this project to identify the type of activity we will train multiple models and choose one that performs better than others. The chosen model will be used for predictions with the testing data set.
+
+It has been found that the random forest model has the best performance, with 99.7% accuracy, compared to the decisions tree and gradient boosted tree models.
 
 ## Pre-modelling setup and data preparation 
-First, one have to load all the libraries that will be required for the following analysis and to set a seed to ensure reproducibility:
+First, one has to load all the libraries that will be required for the following analysis and to set a seed to ensure reproducibility:
 ```{r, echo=TRUE,warning=FALSE}
 library(lattice)
 library(ggplot2)
 library(caret)
 
-set.seed(120)
+set.seed(127)
 ```
 
 There are two available data sets: training one and testing one. One can load the data and check the data structure:
@@ -31,7 +33,7 @@ dim(testing)
 
 In total, there are 160 variables and 19622/20 observations in the training/testing sets.
 
-Before starting to develop a predictive model, it is necessary to clean the training data set and to remove unessential features, such as variables with almost zero variance and NA variables. Also, first 5 variables (```X```, ```user_name```, ```raw_timestamp_part_1```, ```raw_timestamp_part_2```, ```cvtd_timestamp```) can be excluded too, since they do not contribute much to analysis.
+Before starting to develop a predictive model, it is necessary to clean the training data set and to remove unessential features, such as variables with almost zero variance and NA variables. Also, the first 7 variables (```X```, ```user_name```, ```raw_timestamp_part_1```, ```raw_timestamp_part_2```, ```cvtd_timestamp```,```new_window```, ```num_window```) can be excluded too, since they do not contribute much to analysis.
 ```{r}
 # Removing variables with almost zero variance
 tr_nzv <- nearZeroVar(training)
@@ -40,8 +42,8 @@ training_cl <- training[,-tr_nzv]
 # Removing NA variables
 training_cl <- training_cl[ ,colMeans(is.na(training_cl)) < .9]
 
-# Removing first 5 variables
-training_cl <- training_cl[,-c(1:5)]
+# Removing first 7 variables
+training_cl <- training_cl[,-c(1:7)]
 
 dim(training_cl)
 ```
@@ -56,12 +58,12 @@ training_val <- training_cl[-tr_ind,]
 ## Training of the selected models
 There are three candidate models to train: decision trees (```rpart```), random forest (```rf```), gradient boosted trees (```gbm```).
 
-Training control: set up 3-folded cross validation
+For training control one can set up 3-folded cross validation:
 ```{r}
 control_set <- trainControl(method='cv',number=3, verboseIter = FALSE)
 ```
 
-Now one can train all the models on the same training data set ```training_sub```:
+Now one can train all the models on the same training data set ```training_sub```. Coreespondig plots for each model can be found in Appendix.
 ```{r}
 # Decision tree model
 model_dt = train(classe~., data=training_sub, method='rpart', trControl=control_set, tuneLength=5)
@@ -74,7 +76,7 @@ model_gbm = train(classe~., data=training_sub, method='gbm', trControl=control_s
 ```
 
 ## Assesment of modelling perfomance
-To assess performance of the trained models, one can compare accuracy and out of sample error of these models. For this purpose, one can make predictions using the validation subset of the training data.
+To assess performance of the trained models, one can compare accuracy and out-of-sample error of these models. For this purpose, one can make predictions using the validation subset of the training data.
 ```{r}
 # Predict with the decision tree model
 pred_dt <- predict(model_dt, training_val)
@@ -86,7 +88,7 @@ pred_rf <- predict(model_rf, training_val)
 pred_gbm <- predict(model_gbm, training_val)
 ```
 
-Accuracy and out of sample errors of the trained models are computed with   ```confusionMatrix```:
+Accuracy and out-of-sample errors of the trained models are computed with   ```confusionMatrix```:
 ```{r}
 # Confusion matrix for the decision tree model
 confm_dt <- confusionMatrix(pred_dt, as.factor(training_val$classe))
@@ -100,12 +102,33 @@ confm_rf
 confm_gbm <- confusionMatrix(pred_gbm, as.factor(training_val$classe))
 confm_gbm
 ```
-Here the models' accuracy and out of sample errors are summarized:
+Here the models' accuracy and out-of-sample errors are summarized:
 ```{r, echo=FALSE}
 summaryt <- data.frame(
   Model = c('dt', 'rf', 'gbm'),
   Accuracy = rbind(100*confm_dt$overall['Accuracy'], 100*confm_rf$overall['Accuracy'],100*confm_gbm$overall['Accuracy']),
-  OSE = 100 - rbind(100*confm_dt$overall['Accuracy'], 100*confm_rf$overall['Accuracy'],100*confm_gbm$overall['Accuracy'])
+  Oserr = 100 - rbind(100*confm_dt$overall['Accuracy'], 100*confm_rf$overall['Accuracy'],100*confm_gbm$overall['Accuracy'])
 )
+summaryt <- setNames(summaryt, c("Model","Accuracy","Oserr"))
 print(summaryt)
+```
+The random forest mode has the highest accuracy 99.7% with 0.3% out-of-sample error. This is the best result compared to two other models and it will be used to make prediction with the testing data set.
+
+## Predictions with the testing data set
+Here predictions of the random forest model with the testing data set are presented:
+```{r}
+pred_test <- predict(model_rf, testing)
+pred_test
+```
+
+## Appendix
+```{r}
+# Plot for the decision tree model
+plot(model_dt)
+
+# Plot for the random forest model
+plot(model_rf)
+
+# Plot for the gradient boosted tree model
+plot(model_gbm)
 ```
