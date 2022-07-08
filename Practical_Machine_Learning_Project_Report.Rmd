@@ -6,10 +6,12 @@ output: html_document
 ---
 
 ## Overview
-This project is dedicated to analysis
+This project is dedicated to analysis of moving data
+There are five types ("class") of activity: standing, moving, running, lying, sleeping.
+The goal is to identify type of activity, to train multiple models and to choose one that works better than others. The chosen model will be used for predictions with the testing data set. 
 
 ## Pre-modelling setup and data preparation 
-First one can load all libraries that will be required for the following analysis and to set a seed to ensure reproducibility:
+First, one have to load all the libraries that will be required for the following analysis and to set a seed to ensure reproducibility:
 ```{r, echo=TRUE,warning=FALSE}
 library(lattice)
 library(ggplot2)
@@ -29,7 +31,7 @@ dim(testing)
 
 In total, there are 160 variables and 19622/20 observations in the training/testing sets.
 
-Before starting to develop a predictive model, it is necessary to clean the training data set and to remove unessential features, such as variables with almost zero variance and NA variables. Also, first 5 variables (```X```, ```user_name```, ```raw_timestamp_part_1```, ```raw_timestamp_part_2```, ```cvtd_timestamp```) can be excluded too since they do not contribute much to analysis.
+Before starting to develop a predictive model, it is necessary to clean the training data set and to remove unessential features, such as variables with almost zero variance and NA variables. Also, first 5 variables (```X```, ```user_name```, ```raw_timestamp_part_1```, ```raw_timestamp_part_2```, ```cvtd_timestamp```) can be excluded too, since they do not contribute much to analysis.
 ```{r}
 # Removing variables with almost zero variance
 tr_nzv <- nearZeroVar(training)
@@ -42,4 +44,44 @@ training_cl <- training_cl[ ,colMeans(is.na(training_cl)) < .9]
 training_cl <- training_cl[,-c(1:5)]
 
 dim(training_cl)
+```
+
+To assess later an out-of-sample error, the training set after cleaning can be split to two subsets: sub-training and validation sets.
+```{r}
+tr_ind <- createDataPartition(y=training_cl$classe, p=0.7, list=F)
+training_sub <- training_cl[tr_ind,]
+training_val <- training_cl[-tr_ind,]
+```
+
+## Training of the selected models
+There are three candidate models to train: decision trees (```rpart```), random forest (```rf```), gradient boosted trees (```gbm```).
+
+Training control: set up 3-folded cross validation
+```{r}
+control_set <- trainControl(method='cv',number=3, verboseIter = FALSE)
+```
+
+Now one can train all the models on the same training data set ```training_sub```:
+```{r}
+# Decision tree model
+model_dt = train(classe~., data=training_sub, method='rpart', trControl=control_set, tuneLength=5)
+
+# Random forest model
+model_rf = train(classe~., data=training_sub, method='rf', trControl=control_set, tuneLength=5, ntree=500)
+
+# Gradient boosted tree model
+model_gbm = train(classe~., data=training_sub, method='gbm', trControl=control_set, tuneLength=5, verbose=FALSE)
+```
+
+## Assesment of modelling perfomance
+To assess performance of the trained models, one can compare accuracy and out of sample error of these models. For this purpose, one can make predictions using the validation subset of the training data.
+```{r}
+# Predict with the decision tree model
+pred_dt <- predict(model_dt, training_val)
+
+# Predict with the random forest model
+pred_rf <- predict(model_rf, training_val)
+
+# Predict with the gradient boosted tree model
+pred_gbm <- predict(model_gbm, training_val)
 ```
