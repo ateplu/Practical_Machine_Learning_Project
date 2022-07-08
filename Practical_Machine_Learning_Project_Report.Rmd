@@ -17,7 +17,7 @@ library(lattice)
 library(ggplot2)
 library(caret)
 
-set.seed(135)
+set.seed(120)
 ```
 
 There are two available data sets: training one and testing one. One can load the data and check the data structure:
@@ -67,7 +67,7 @@ Now one can train all the models on the same training data set ```training_sub``
 model_dt = train(classe~., data=training_sub, method='rpart', trControl=control_set, tuneLength=5)
 
 # Random forest model
-model_rf = train(classe~., data=training_sub, method='rf', trControl=control_set, tuneLength=5, ntree=500)
+model_rf = train(classe~., data=training_sub, method='rf', trControl=control_set, tuneLength=5)
 
 # Gradient boosted tree model
 model_gbm = train(classe~., data=training_sub, method='gbm', trControl=control_set, tuneLength=5, verbose=FALSE)
@@ -84,4 +84,28 @@ pred_rf <- predict(model_rf, training_val)
 
 # Predict with the gradient boosted tree model
 pred_gbm <- predict(model_gbm, training_val)
+```
+
+Accuracy and out of sample errors of the trained models are computed with   ```confusionMatrix```:
+```{r}
+# Confusion matrix for the decision tree model
+confm_dt <- confusionMatrix(pred_dt, as.factor(training_val$classe))
+confm_dt
+
+# Confusion matrix for the random forest model
+confm_rf <- confusionMatrix(pred_rf, as.factor(training_val$classe))
+confm_rf
+
+# Confusion matrix for the gradient boosted tree model
+confm_gbm <- confusionMatrix(pred_gbm, as.factor(training_val$classe))
+confm_gbm
+```
+Here the models' accuracy and out of sample errors are summarized:
+```{r, echo=FALSE}
+summaryt <- data.frame(
+  Model = c('dt', 'rf', 'gbm'),
+  Accuracy = rbind(100*confm_dt$overall['Accuracy'], 100*confm_rf$overall['Accuracy'],100*confm_gbm$overall['Accuracy']),
+  OSE = 100 - rbind(100*confm_dt$overall['Accuracy'], 100*confm_rf$overall['Accuracy'],100*confm_gbm$overall['Accuracy'])
+)
+print(summaryt)
 ```
